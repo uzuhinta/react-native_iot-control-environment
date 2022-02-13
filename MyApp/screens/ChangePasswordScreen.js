@@ -12,9 +12,9 @@ export default function ChangePasswordScreen({navigation}) {
     console.log(values);
     try {
       const res = await changePassword({
-        confirmPass: values.oldPassword,
+        oldPass: values.oldPassword,
         newPass: values.newPassword,
-        oldPass: values.confirmPassword,
+        confirmPass: values.confirmPassword,
       });
       const {message, error, data} = res;
       if (error == 1) {
@@ -43,7 +43,7 @@ export default function ChangePasswordScreen({navigation}) {
     oldPassword: Yup.string().required('Hãy điền mật khẩu cũ'),
     newPassword: Yup.string()
       .required('Hãy điền mật khẩu mới')
-      .test('len', 'Độ dài tối thiểu 6 ký tự', (val) => val.length > 5),
+      .test('len', 'Độ dài tối thiểu 6 ký tự', (val) => val?.length > 5),
     confirmPassword: Yup.string()
       .required('Hãy nhập lại mật khẩu mới')
       .test(
@@ -141,7 +141,7 @@ export default function ChangePasswordScreen({navigation}) {
                   <Text style={styles.errorMsg}>{errors.confirmPassword}</Text>
                 </Text>
               ) : null}
-              <View style={[styles.button, commonStyles.bottomButton]}>
+              <View style={[commonStyles.bottomButton]}>
                 <Button
                   mode="contained"
                   style={styles.signIn}

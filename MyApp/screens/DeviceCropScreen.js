@@ -1,6 +1,7 @@
 import {Picker} from '@react-native-picker/picker';
 import React, {useEffect, useState} from 'react';
 import {
+  Dimensions,
   ScrollView,
   StyleSheet,
   Switch as RNSwitch,
@@ -19,470 +20,257 @@ import {cropDevice, stopCropDevice} from './../api/device';
 import Toast from 'react-native-toast-message';
 import {ApplicationProvider, Layout, Card} from '@ui-kitten/components';
 import {STACK_FARMS} from '../navigations/preset';
+import database from '@react-native-firebase/database';
+import RNPickerSelect from 'react-native-picker-select';
+import {LineChart} from 'react-native-chart-kit';
 
 const paymentType = [
   {
     id: 0,
-    name: 'Mời chọn kiểu thanh toán',
+    name: 'Nhiệt độ',
   },
   {
     id: 1,
-    name: 'Thanh toán theo ngày',
+    name: 'Độ ẩm',
   },
   {
     id: 2,
-    name: 'Thanh toán theo mùa',
+    name: 'Ánh sáng',
   },
 ];
 
 export default function DeviceCropScreen({route, navigation}) {
-  //form crop
-  const [inputData, setInputData] = useState({
-    cropName: null,
-    description: null,
-    ec: null,
-    ph: null,
-  });
-  const [pickerSelected, setPickerSelected] = useState(0);
-  const [typePlant, setTypePlant] = useState(null);
+  const [first, setFirst] = useState(false);
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [pickerSelectedType, setPickerSelectedType] = useState(0);
-  const [isDatePickerVisible, setDatePickerVisibility] = useState({
-    start: false,
-    end: false,
+  const [day, setDay] = useState(new Date());
+  const [res, setRes] = useState({});
+  const [logs, setLogs] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [humi, setHumi] = useState({
+    12: 12,
   });
-  const [chooseDate, setChooseDate] = useState({
-    start: null,
-    end: null,
+  const [temp, setTemp] = useState({
+    12: 12,
   });
-  const [visible, setVisible] = React.useState(false);
+  const [light, setLight] = useState({
+    12: 12,
+  });
 
-  const showModal = () => setVisible(true);
-  const hideModal = () => setVisible(false);
-  //handle picker
-  const showhideDatePicker = (type) => {
-    //SHOW: type = 0: start, type = 1: end
-    //HIDE: type = 2: start, type = 3: end
-    console.log(isDatePickerVisible);
-    if (type === 0)
-      setDatePickerVisibility((preState) => {
-        return {...preState, start: true};
-      });
-    if (type === 1)
-      setDatePickerVisibility((preState) => {
-        return {...preState, end: true};
-      });
-    if (type === 2)
-      setDatePickerVisibility((preState) => {
-        return {...preState, start: false};
-      });
-    if (type === 3)
-      setDatePickerVisibility((preState) => {
-        return {...preState, end: false};
-      });
-  };
+  const [topic, setTopic] = useState(
+    'agriculture_hust_2021_control_topic_5b211e19-d4b3-4fa7-b096-e134796756ae',
+  );
 
-  const handleConfirmStart = (date, type) => {
-    console.log('A date has been picked: ', date, type);
-    if (type === 2) {
-      setChooseDate((preState) => {
-        return {...preState, start: date.toISOString()};
+  useEffect(() => {
+    database()
+      .ref(`/${topic}/data`)
+      .once('value')
+      .then((snapshot) => {
+        setRes(snapshot.val());
       });
-      if (typePlant) {
-        var dateEnd = new Date();
-        let dateStart = new Date(date);
-        dateEnd.setDate(dateStart.getDate() + parseInt(typePlant.timeDays));
-        console.log('dateStart', dateStart);
-        console.log('typePlant.timeDays', typePlant.timeDays);
-        console.log('dateEnd', dateEnd);
-        setChooseDate((preState) => {
-          return {...preState, end: dateEnd.toISOString()};
+  }, []);
+
+  function timeConvert(n) {
+    var num = n;
+    var hours = num / 60 / 60;
+    var rhours = Math.floor(hours);
+    var minutes = (num - rhours * 3600) / 60;
+    var rminutes = Math.round(minutes);
+    return rhours + ':' + rminutes;
+  }
+
+  useEffect(() => {
+    const getData = () => {
+      console.log('hr', res);
+
+      const iRes = res[day.toISOString().substring(0, 10)];
+      if (iRes) {
+        let temp = {};
+        let humi = {};
+        let light = {};
+        Object.keys(iRes).map((item) => {
+          temp[timeConvert(Math.round(parseInt(item)))] = Math.round(
+            iRes[item].temp,
+          );
+          humi[timeConvert(Math.round(parseInt(item)))] = Math.round(
+            iRes[item].humi,
+          );
+          light[timeConvert(Math.round(parseInt(item)))] = Math.round(
+            iRes[item].light,
+          );
         });
+        setHumi(humi);
+        setLight(light);
+        setTemp(temp);
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Thông báo',
+          text2: 'Không có lịch sử dữ liệu',
+        });
+        // alert('Không có lịch sử dữ liệu');
+        // setDay(new Date());
       }
-      showhideDatePicker(2);
-    }
-    if (type === 3) {
-      setChooseDate((preState) => {
-        return {...preState, end: date.toISOString()};
-      });
-      showhideDatePicker(3);
-    }
-    console.log('chooseDate', chooseDate);
+    };
+    getData();
+  }, [day, pickerSelectedType]);
+
+  const showDatePicker = () => {
+    setDatePickerVisibility(true);
   };
+
+  const hideDatePicker = () => {
+    setDatePickerVisibility(false);
+  };
+
+  const handleConfirm = (pickDate) => {
+    setDay(pickDate);
+    hideDatePicker();
+  };
+  // const []
+  //form crop
   const goBack = () => {
     navigation.goBack();
   };
 
-  const handleSubmit = async () => {
-    const data = {};
-    data.cropName = inputData.cropName;
-    data.description = inputData.description;
-    data.paymentType = pickerSelectedType;
-    data.plantId = pickerSelected;
-    data.endTime = chooseDate.end;
-    data.startTime = chooseDate.start;
-    // ec: 0-5
-    // ph : 0-14
-    data.metaData = {
-      ec: inputData.ec,
-      ph: inputData.ph,
-    };
-    data.deviceIds = [route.params.device.id];
-    console.log('@@data', data);
-    try {
-      const res = await cropDevice(data);
-      const {error, message} = res;
-      if (error == 1) {
-        Toast.show({
-          type: 'error',
-          text1: 'Thông báo lỗi',
-          text2: message,
-        });
-      } else if (error == 0) {
-        setCrop(true);
-        Toast.show({
-          type: 'success',
-          text1: 'Thành công',
-          text2: message,
-        });
-        const device = route.params.device;
-        navigation.navigate(STACK_FARMS.DEVICE_INFO, {device});
-      }
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Thông báo lỗi',
-        text2: error.message,
-      });
-    }
-  };
-
-  const handleSubmitEnd = async () => {
-    hideModal();
-    console.log('handleSubmitEnd');
-    try {
-      const res = await stopCropDevice(route.params.device.id);
-      const {error, message} = res;
-      if (error == 1) {
-        Toast.show({
-          type: 'error',
-          text1: 'Thông báo lỗi',
-          text2: 'Xảy ra lỗi! Vui lòng thử lại.',
-        });
-      } else if (error == 0) {
-        navigation.navigate(STACK_FARMS.DEVICE_LIST);
-        // setCrop(false);
-        Toast.show({
-          type: 'success',
-          text1: 'Thành công',
-          text2: 'Kết thúc vụ mùa thành công',
-        });
-      }
-    } catch (error) {
-      console.log(error);
-      Toast.show({
-        type: 'error',
-        text1: 'Thông báo lỗi',
-        text2: error.message,
-      });
-    }
-  };
-
-  const [resData, setResData] = useState([]);
-  const [crop, setCrop] = useState();
   useEffect(() => {
-    console.log('refresh');
-    const asyncFunc = async () => {
-      const res = await getPlant(null, 1, 1, 1);
-      const total = res.data.total;
-      const allDataPlant = await getPlant(null, 1, total, 1);
-      console.log('allDataPlant.data.items', allDataPlant.data.items);
-      const arrItems = [];
-      arrItems.push({
-        name: 'Mời chọn loại cây trồng',
-        id: 0,
-      });
-      arrItems.push(...allDataPlant.data.items);
-      console.log('...allDataPlant.data.items', arrItems);
-
-      setResData(arrItems);
-      console.log('route.params.device.crop', route.params.device.alive);
-      setCrop(route.params.device.alive);
-      // setCrop(true);
-      // if (route.params.device.crop) {
-      //   setCrop(false);
-      // } else {
-      //   setCrop(true);
-      // }
-    };
-    asyncFunc();
+    console.log('refresh', route.params.device);
   }, []);
-  const Header = (props) => (
-    <View {...props}>
-      <Text style={{fontWeight: 'bold', fontSize: 20}}>Xác nhận</Text>
-    </View>
-  );
-  const Footer = (props) => (
-    <View {...props} style={[props.style, styles.footerContainer]}>
-      <Button mode="text" onPress={handleSubmitEnd}>
-        Chấp nhận
-      </Button>
-      <Button mode="text" color="red" onPress={() => hideModal()}>
-        Hủy bỏ
-      </Button>
-    </View>
-  );
 
   return (
     <>
       <Appbar.Header>
         <Appbar.BackAction onPress={goBack} />
         <Appbar.Content
-          title="Thiết lập mùa vụ"
+          title="Lịch sử môi trường"
           subtitle={`Thiết bị ${route.params.device.deviceName}`}
         />
       </Appbar.Header>
-      {crop ? (
-        <>
-          {/* <Text style={styles.sectionHeaderStyle}>Kết thúc mùa vụ</Text> */}
-          <Portal>
-            <Modal
-              visible={visible}
-              onDismiss={hideModal}
-              contentContainerStyle={styles.containerStyle}>
-              <Card style={styles.card} header={Header} footer={Footer}>
-                <Text style={{fontSize: 15}}>
-                  Bạn có chắc chắn muốn kết thúc?
-                </Text>
-              </Card>
-            </Modal>
-          </Portal>
-          <View style={styles.center}>
-            <Button
-              mode="contained"
-              color="#FCA902"
-              style={commonStyles.styleBottomButton}
-              onPress={() => showModal()}>
-              Kết thúc mùa vụ
-            </Button>
-          </View>
-        </>
-      ) : (
-        <>
-          <ScrollView>
-            <Text style={styles.sectionHeaderStyle}>Khởi tạo vụ</Text>
-            <View style={styles.container}>
-              <View style={styles.item} rippleColor="rgba(0, 0, 0, .32)">
-                <Text style={styles.title}>Tên mùa</Text>
+      <ScrollView style={commonStyles.container}>
+        <Text style={styles.sectionHeaderStyle}>Ngày</Text>
 
-                <TextInput
-                  name="cropName"
-                  value={inputData.cropName}
-                  style={styles.textInput}
-                  onChangeText={(text) => {
-                    setInputData((preState) => {
-                      return {...preState, cropName: text};
-                    });
-                  }}
-                  placeholder="Nhập tên vụ mùa"
-                  placeholderTextColor={theme.colors.placeholderTextColor}
-                />
-              </View>
-              <View style={styles.itemInput}>
-                <Text style={styles.title}>Loại cây trồng</Text>
+        {/* <View style={styles.item} rippleColor="rgba(0, 0, 0, .32)"> */}
+        <Button onPress={showDatePicker}>
+          {day.toISOString().substring(0, 10)}
+        </Button>
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirm}
+          onCancel={hideDatePicker}
+        />
+        {/* </View> */}
 
-                <Picker
-                  selectedValue={pickerSelected}
-                  style={{
-                    height: 50,
-                    color:
-                      pickerSelected !== 0
-                        ? 'black'
-                        : theme.colors.placeholderTextColor,
-                  }}
-                  onValueChange={(itemValue, itemIndex) => {
-                    setPickerSelected(itemValue);
-                    resData.forEach((plant) => {
-                      if (plant.id === itemValue) {
-                        setTypePlant(plant);
-                      }
-                    });
-                  }}>
-                  {resData
-                    ? resData.map((item, index) => {
-                        return (
-                          <Picker.Item
-                            label={item.name}
-                            value={item.id}
-                            key={index}
-                          />
-                        );
-                      })
-                    : null}
-                </Picker>
-              </View>
-              {pickerSelected !== 0 ? (
-                <Animatable.View animation="fadeInLeft" duration={500}>
-                  <View style={styles.twoColumn}>
-                    <View
-                      style={styles.itemInputColumn}
-                      rippleColor="rgba(0, 0, 0, .32)">
-                      <Text style={styles.title}>Giá trị EC</Text>
+        <Text style={styles.sectionHeaderStyle}>Biểu đồ</Text>
 
-                      <TextInput
-                        name="description"
-                        value={inputData.ec}
-                        style={styles.textInput}
-                        onChangeText={(text) => {
-                          setInputData((preState) => {
-                            return {...preState, ec: text};
-                          });
-                        }}
-                        placeholder={`Gợi ý ${
-                          typePlant.description.split(',', 2)[0]
-                        }`}
-                        placeholderTextColor={theme.colors.placeholderTextColor}
-                      />
-                    </View>
-                    <View
-                      style={styles.itemInputColumn}
-                      rippleColor="rgba(0, 0, 0, .32)">
-                      <Text style={styles.title}>Giá trị PH</Text>
-
-                      <TextInput
-                        name="description"
-                        value={inputData.ph}
-                        style={styles.textInput}
-                        onChangeText={(text) => {
-                          setInputData((preState) => {
-                            return {...preState, ph: text};
-                          });
-                        }}
-                        placeholder={`Gợi ý ${
-                          typePlant.description.split(',', 2)[1]
-                        }`}
-                        placeholderTextColor={theme.colors.placeholderTextColor}
-                      />
-                    </View>
-                  </View>
-                </Animatable.View>
-              ) : null}
-              <View style={styles.itemInput}>
-                <Text style={styles.title}>Kiểu thanh toán</Text>
-
-                <Picker
-                  selectedValue={pickerSelectedType}
-                  style={{
-                    height: 50,
-                    color:
-                      pickerSelectedType !== 0
-                        ? 'black'
-                        : theme.colors.placeholderTextColor,
-                  }}
-                  onValueChange={(itemValue, itemIndex) => {
-                    setPickerSelectedType(itemValue);
-                  }}>
-                  {paymentType
-                    ? paymentType.map((item, index) => {
-                        return (
-                          <Picker.Item
-                            label={item.name}
-                            value={item.id}
-                            key={index}
-                          />
-                        );
-                      })
-                    : null}
-                </Picker>
-              </View>
-              <View style={styles.twoColumn}>
-                <View style={styles.itemInputColumn}>
-                  <View>
-                    <Text style={styles.title}>Ngày bắt đầu</Text>
-
-                    <TouchableOpacity
-                      style={styles.button}
-                      onPress={() => showhideDatePicker(0)}>
-                      <TextInput
-                        style={{
-                          color: chooseDate.start
-                            ? 'black'
-                            : theme.colors.placeholderTextColor,
-                        }}
-                        value={
-                          chooseDate.start == null
-                            ? 'Chọn ngày bắt đầu'
-                            : chooseDate.start.slice(0, 10)
-                        }
-                        editable={false}
-                      />
-                    </TouchableOpacity>
-                    <DateTimePickerModal
-                      isVisible={isDatePickerVisible.start}
-                      mode="date"
-                      onConfirm={(date) => handleConfirmStart(date, 2)}
-                      onCancel={() => showhideDatePicker(2)}
-                    />
-                  </View>
-                </View>
-                <View style={styles.itemInputColumn}>
-                  <View>
-                    <Text style={styles.title}>Ngày kết thúc</Text>
-
-                    <TouchableOpacity
-                      style={styles.button}
-                      onPress={() => showhideDatePicker(1)}>
-                      <TextInput
-                        style={{
-                          color: chooseDate.start
-                            ? 'black'
-                            : theme.colors.placeholderTextColor,
-                        }}
-                        value={
-                          chooseDate.end == null
-                            ? 'Chọn ngày kết thúc'
-                            : chooseDate.end.slice(0, 10)
-                        }
-                        editable={false}
-                      />
-                    </TouchableOpacity>
-                    <DateTimePickerModal
-                      isVisible={isDatePickerVisible.end}
-                      mode="date"
-                      onConfirm={(date) => handleConfirmStart(date, 3)}
-                      onCancel={() => showhideDatePicker(3)}
-                    />
-                  </View>
-                </View>
-              </View>
-              <View style={styles.item} rippleColor="rgba(0, 0, 0, .32)">
-                <Text style={styles.title}>Mô tả</Text>
-
-                <TextInput
-                  name="description"
-                  value={inputData.description}
-                  style={styles.textInput}
-                  onChangeText={(text) => {
-                    setInputData((preState) => {
-                      return {...preState, description: text};
-                    });
-                    // console.log(text);
-                  }}
-                  placeholder="Nhập mô tả mùa vụ"
-                  placeholderTextColor={theme.colors.placeholderTextColor}
-                />
-              </View>
-            </View>
-          </ScrollView>
-          <View style={commonStyles.bottomButton}>
-            <Button
-              mode="contained"
-              style={commonStyles.styleBottomButton}
-              onPress={handleSubmit}>
-              Thiết lập
-            </Button>
-          </View>
-        </>
-      )}
+        <Picker
+          selectedValue={pickerSelectedType}
+          style={{
+            height: 50,
+            color:
+              pickerSelectedType !== 0
+                ? 'black'
+                : theme.colors.placeholderTextColor,
+          }}
+          onValueChange={(itemValue, itemIndex) => {
+            setPickerSelectedType(itemValue);
+          }}>
+          {paymentType
+            ? paymentType.map((item, index) => {
+                return (
+                  <Picker.Item label={item.name} value={item.id} key={index} />
+                );
+              })
+            : null}
+        </Picker>
+        {pickerSelectedType == 0 && (
+          <LineChart
+            data={{
+              labels: Object.keys(temp).map((key) => key.split(':')[0]),
+              datasets: [
+                {
+                  data: Object.values(temp),
+                },
+              ],
+            }}
+            width={Dimensions.get('window').width - 16} // from react-native
+            height={180}
+            chartConfig={{
+              backgroundColor: '#1cc910',
+              backgroundGradientFrom: '#eff3ff',
+              backgroundGradientTo: '#efefef',
+              decimalPlaces: 2, // optional, defaults to 2dp
+              color: (opacity = 255) => `rgba(0, 0, 0, ${opacity})`,
+              style: {
+                borderRadius: 16,
+              },
+            }}
+            bezier
+            style={{
+              marginVertical: 8,
+              borderRadius: 16,
+            }}
+          />
+        )}
+        {pickerSelectedType == 1 && (
+          <LineChart
+            data={{
+              labels: Object.keys(humi).map((key) => key.split(':')[0]),
+              datasets: [
+                {
+                  data: Object.values(humi),
+                },
+              ],
+            }}
+            width={Dimensions.get('window').width - 16} // from react-native
+            height={180}
+            chartConfig={{
+              backgroundColor: '#1cc910',
+              backgroundGradientFrom: '#eff3ff',
+              backgroundGradientTo: '#efefef',
+              decimalPlaces: 2, // optional, defaults to 2dp
+              color: (opacity = 255) => `rgba(0, 0, 0, ${opacity})`,
+              style: {
+                borderRadius: 16,
+              },
+            }}
+            bezier
+            style={{
+              marginVertical: 8,
+              borderRadius: 16,
+            }}
+          />
+        )}
+        {pickerSelectedType == 2 && (
+          <LineChart
+            data={{
+              labels: Object.keys(light).map((key) => key.split(':')[0]),
+              datasets: [
+                {
+                  data: Object.values(light),
+                },
+              ],
+            }}
+            width={Dimensions.get('window').width - 16} // from react-native
+            height={180}
+            chartConfig={{
+              backgroundColor: '#1cc910',
+              backgroundGradientFrom: '#eff3ff',
+              backgroundGradientTo: '#efefef',
+              decimalPlaces: 2, // optional, defaults to 2dp
+              color: (opacity = 255) => `rgba(0, 0, 0, ${opacity})`,
+              style: {
+                borderRadius: 16,
+              },
+            }}
+            bezier
+            style={{
+              marginVertical: 8,
+              borderRadius: 16,
+            }}
+          />
+        )}
+      </ScrollView>
     </>
   );
 }

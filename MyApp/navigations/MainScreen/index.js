@@ -8,7 +8,6 @@ import {TABS_KEY} from '../preset';
 import {theme} from './../../common/theme';
 // import {DEFAULT_CONFIG} from './Stack.config';
 import FarmScreen from './FarmScreen';
-import TopInvoiceScreen from './TopInvoiceScreen';
 import TopSettingScreen from './TopSettingScreen';
 
 const noAuth = [
@@ -24,15 +23,6 @@ const noAuth = [
     },
   },
   {
-    name: TABS_KEY.INVOICE,
-    component: TopInvoiceScreen,
-    options: {
-      ...TopInvoiceScreen?.options,
-      tabBarLabel: TABS_KEY.INVOICE,
-      tabBarIcon: ({color, size}) => <FontAwesome name="money" size={23} />,
-    },
-  },
-  {
     name: TABS_KEY.TAB_SETTING,
     component: TopSettingScreen,
     options: {
@@ -43,31 +33,12 @@ const noAuth = [
   },
 ];
 
-const NoAuthStack = createBottomTabNavigator();
-
-const stackNavigatorProps = {
-  initialRouteName: TABS_KEY.LIST_FARM,
-  backBehavior: 'none',
-};
-
 const FarmIcon = (props) => {
   const activate = props.activate;
 
   return (
     <MaterialCommunityIcons
       name="focus-field"
-      color={activate ? theme.colors.primary : 'black'}
-      size={23}
-    />
-  );
-};
-
-const InvoiceIcon = (props) => {
-  const activate = props.activate;
-
-  return (
-    <FontAwesome
-      name="money"
       color={activate ? theme.colors.primary : 'black'}
       size={23}
     />
@@ -102,17 +73,11 @@ const BottomTabBar = ({navigation, state}) => {
           <FarmIcon activate={selectedIndex === 0 ? 'true' : false} />
         )}
       />
-      <BottomNavigationTab
-        title="Hóa đơn"
-        icon={() => (
-          <InvoiceIcon activate={selectedIndex === 1 ? 'true' : false} />
-        )}
-      />
 
       <BottomNavigationTab
         title="Cài đặt"
         icon={() => (
-          <SettingIcon activate={selectedIndex === 2 ? 'true' : false} />
+          <SettingIcon activate={selectedIndex === 1 ? 'true' : false} />
         )}
       />
     </BottomNavigation>
@@ -126,7 +91,6 @@ export default function MainScreen() {
       backBehavior="none"
       tabBar={(props) => <BottomTabBar {...props} />}>
       <Screen name="Farm" component={FarmScreen} />
-      <Screen name="Invoice" component={TopInvoiceScreen} />
       <Screen name="Setting" component={TopSettingScreen} />
     </Navigator>
   );

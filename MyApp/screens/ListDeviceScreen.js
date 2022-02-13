@@ -100,6 +100,7 @@ export default function ListDeviceScreen({route, navigation}) {
     // }
   };
   const handleFarmCrop = (device) => {
+    console.log(device);
     navigation.navigate(STACK_FARMS.DEVICE_CROP, {
       device,
     });
@@ -139,7 +140,7 @@ export default function ListDeviceScreen({route, navigation}) {
             onPress={() => {
               handleFarmCrop(props.device, alive);
             }}>
-            <AntDesign name="setting" size={35} />
+            <AntDesign name="infocirlceo" size={35} />
           </Button>
         </View>
       </TouchableRipple>
@@ -185,8 +186,8 @@ export default function ListDeviceScreen({route, navigation}) {
             showsVerticalScrollIndicator={false}
             ItemSeparatorComponent={FlatListItemSeparator}
             sections={[
-              {title: 'Hoạt động', data: deviceClass.activate},
-              {title: 'Chưa hoạt động', data: deviceClass.inactivate},
+              {title: 'Hoạt động', data: deviceClass.inactivate},
+              // {title: 'Chưa hoạt động', data: deviceClass.inactivate},
             ]}
             renderSectionHeader={({section}) => (
               <Text style={styles.sectionHeaderStyle}>{section.title}</Text>

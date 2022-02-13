@@ -16,6 +16,7 @@ export default function ChangePasswordScreen({navigation}) {
     const asyncGetInfo = async () => {
       try {
         const res = await getInfo();
+        console.log(res.data);
         setInfo(res.data);
       } catch (error) {
         Toast.show({
@@ -31,7 +32,7 @@ export default function ChangePasswordScreen({navigation}) {
   const changeHandle = async (values) => {
     console.log(values);
     try {
-      const res = await changeInfo(values);
+      const res = await changeInfo({...values, id: info?.ID});
       const {message, error, data} = res;
       if (error == 1) {
         Toast.show({
@@ -57,7 +58,7 @@ export default function ChangePasswordScreen({navigation}) {
   };
   const ChangeInfoSchema = Yup.object().shape({
     name: Yup.string(),
-    email: Yup.string(),
+    email: Yup.string().email(),
     phone: Yup.string(),
     address: Yup.string(),
   });
@@ -159,7 +160,7 @@ export default function ChangePasswordScreen({navigation}) {
                     <Text style={styles.errorMsg}>{errors.address}</Text>
                   </Text>
                 ) : null}
-                <View style={[styles.button, commonStyles.bottomButton]}>
+                <View style={[commonStyles.bottomButton]}>
                   <Button
                     mode="contained"
                     style={styles.signIn}

@@ -140,6 +140,7 @@ export const commonStyles = StyleSheet.create({
   },
   //Bottom button
   bottomButton: {
+    marginTop: 3,
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 10,

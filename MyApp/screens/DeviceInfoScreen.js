@@ -8,107 +8,87 @@ import {STACK_FARMS} from '../navigations/preset';
 
 import {commonStyles, theme} from './../common/theme';
 import Toast from 'react-native-toast-message';
+import database from '@react-native-firebase/database';
+
+const convertNodeToJSON = (data) => {
+  const temp = JSON.stringify(data).split(/^{.*{/)[1];
+  return JSON.parse('{' + temp.substring(0, temp.length - 1));
+};
+
 export default function DeviceInfoScreen({route, navigation}) {
-  const [data, setData] = useState({
-    humidity: 0,
-    temp: 0,
-    light: 0,
-    ec: 0,
-    ph: 0,
-    waterTemp: 0,
-  });
+  const [temp, setTemp] = useState(0);
+  const [humi, setHumi] = useState(0);
+  const [light, setLight] = useState(0);
+  const [device1, setDevice1] = useState(0);
+  const [device2, setDevice2] = useState(0);
+  const [mode, setMode] = useState(0);
+  const [topic, setTopic] = useState(
+    'agriculture_hust_2021_control_topic_5b211e19-d4b3-4fa7-b096-e134796756ae',
+  );
+
+  // useEffect(() => {
+  //   console.log('route', route.params.device?.topicName);
+  //   setTopic(route.params.device?.topicName);
+  // }, []);
 
   useEffect(() => {
-    // console.log('route', route.params.device);
-    let client;
-    const handleMqtt = async () => {
-      const deviceId = route.params.device.id;
-      console.log('deviceId', deviceId);
-      try {
-        const topicName = await AsyncStorage.getItem('topicName');
+    const onValueChange = database()
+      .ref(`/${topic}/data/${new Date().toISOString().substring(0, 10)}`)
+      .limitToLast(1)
+      .on('value', (snapshot) => {
+        // console.log('User data: ', convertNodeToJSON(snapshot.val()));
+        const data = convertNodeToJSON(snapshot.val());
+        setHumi(data?.humi);
+        setLight(data?.light);
+        setTemp(data?.temp);
+      });
 
-        // console.log(client);
-        client.on('closed', function () {
-          console.log('mqtt.event.closed');
-        });
-
-        client.on('error', function (msg) {
-          console.log('mqtt.event.error', msg);
-        });
-
-        client.on('message', function (msg) {
-          let newData;
-          try {
-            newData = JSON.parse(msg.data);
-            console.log('mqtt.event.message', newData);
-            if (newData.token == deviceId && newData.type == 2) {
-              if (newData.data) {
-                console.log('setdata');
-                setData({
-                  ...data,
-                  ...newData.data,
-                });
-              } else {
-                Toast.show({
-                  type: 'info',
-                  text1: 'Thông báo',
-                  text2:
-                    'Thiết bị của bạn không hoạt động! Vui lòng kiểm tra lại.',
-                });
-              }
-            }
-          } catch (error) {
-            Toast.show({
-              type: 'error',
-              text1: 'Thông báo lỗi',
-              text2: 'Thiết bị lỗi! Vui lòng liên hệ quản trị viên.',
-            });
-          }
-          // {"token":"7","type":1,"data":null,"description":"Thiết bị của bạn không hoạt động ! Vui lòng kiểm tra lại !"}
-        });
-
-        client.on('connect', function () {
-          console.log('connected');
-          console.log(topicName);
-          client.subscribe(topicName, 0);
-          // client.publish('/data', 'test', 0, false);
-        });
-
-        client.connect();
-      } catch (error) {
-        console.log(error);
-        Toast.show({
-          type: 'error',
-          text1: 'Thông báo lỗi',
-          text2: error.message,
-        });
-      }
-      try {
-        const res = await getLastData(deviceId);
-        const dataRes = res.data?.data?.data;
-        console.log('@@', dataRes);
-        if (dataRes != null) {
-          setData(dataRes);
-        }
-      } catch (error) {
-        console.log(error);
-        Toast.show({
-          type: 'error',
-          text1: 'Thông báo lỗi',
-          text2: error.message,
-        });
-      }
-    };
-    handleMqtt();
-    return () => {
-      client.disconnect();
-      console.log('disconnect client');
-    };
+    // Stop listening for updates when no longer required
+    return () => database().ref(`/${topic}/data`).off('value', onValueChange);
   }, []);
+
+  useEffect(() => {
+    const onValueChange = database()
+      .ref(`/${topic}/response-device1`)
+      .on('value', (snapshot) => {
+        console.log('User data: ', snapshot.val());
+        setDevice1(snapshot.val());
+      });
+
+    // Stop listening for updates when no longer required
+    return () =>
+      database().ref(`/${topic}/response-device1`).off('value', onValueChange);
+  }, []);
+
+  useEffect(() => {
+    const onValueChange = database()
+      .ref(`/${topic}/response-device2`)
+      .on('value', (snapshot) => {
+        console.log('User data: ', snapshot.val());
+        setDevice2(snapshot.val());
+      });
+
+    // Stop listening for updates when no longer required
+    return () =>
+      database().ref(`/${topic}/response-device2`).off('value', onValueChange);
+  }, []);
+
+  useEffect(() => {
+    const onValueChange = database()
+      .ref(`/${topic}/response-mode`)
+      .on('value', (snapshot) => {
+        console.log('User data: ', snapshot.val());
+        setMode(snapshot.val());
+      });
+
+    // Stop listening for updates when no longer required
+    return () =>
+      database().ref(`/${topic}/response-mode`).off('value', onValueChange);
+  }, []);
+
   const goBack = () => {
     navigation.navigate(STACK_FARMS.DEVICE_LIST);
   };
-  // {"humidity":"80","temp":"18.5","light":"1080","ec":"0.92","ph":"5.08","waterTemp":"22.18"}
   return (
     <>
       <Appbar.Header>
@@ -119,85 +99,80 @@ export default function DeviceInfoScreen({route, navigation}) {
         />
       </Appbar.Header>
       <ScrollView style={commonStyles.container}>
-        {data === null ? (
-          <Text>Chưa có thông tin</Text>
-        ) : (
-          <>
-            <Text style={styles.sectionHeaderStyle}>Tổng quan</Text>
-            <TouchableRipple
-              style={commonStyles.item}
-              onPress={() => {
-                console.log('test');
-              }}
-              rippleColor="rgba(0, 0, 0, .32)">
-              <View style={commonStyles.itemRow}>
-                <MaterialCommunityIcons name="temperature-celsius" size={40} />
-                <Text style={styles.description}>Nhiệt độ</Text>
-                <Text style={styles.data}>{data.temp}</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              style={commonStyles.item}
-              onPress={() => {
-                console.log('test');
-              }}
-              rippleColor="rgba(0, 0, 0, .32)">
-              <View style={commonStyles.itemRow}>
-                <MaterialCommunityIcons name="air-humidifier" size={40} />
-                <Text style={styles.description}>Độ ẩm</Text>
-                <Text style={styles.data}>{data.humidity}</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              style={commonStyles.item}
-              onPress={() => {
-                console.log('test');
-              }}
-              rippleColor="rgba(0, 0, 0, .32)">
-              <View style={commonStyles.itemRow}>
-                <MaterialCommunityIcons name="white-balance-sunny" size={40} />
-                <Text style={styles.description}>Độ sáng</Text>
-                <Text style={styles.data}>{data.light}</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              style={commonStyles.item}
-              onPress={() => {
-                console.log('test');
-              }}
-              rippleColor="rgba(0, 0, 0, .32)">
-              <View style={commonStyles.itemRow}>
-                <MaterialCommunityIcons name="water-percent" size={40} />
-                <Text style={styles.description}>Độ EC</Text>
-                <Text style={styles.data}>{data.ec}</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              style={commonStyles.item}
-              onPress={() => {
-                console.log('test');
-              }}
-              rippleColor="rgba(0, 0, 0, .32)">
-              <View style={commonStyles.itemRow}>
-                <MaterialCommunityIcons name="water" size={40} />
-                <Text style={styles.description}>Độ PH</Text>
-                <Text style={styles.data}>{data.ph}</Text>
-              </View>
-            </TouchableRipple>
-            <TouchableRipple
-              style={commonStyles.item}
-              onPress={() => {
-                console.log('test');
-              }}
-              rippleColor="rgba(0, 0, 0, .32)">
-              <View style={commonStyles.itemRow}>
-                <MaterialCommunityIcons name="coolant-temperature" size={40} />
-                <Text style={styles.description}>Nhiệt độ nước</Text>
-                <Text style={styles.data}>{data.waterTemp}</Text>
-              </View>
-            </TouchableRipple>
-          </>
-        )}
+        <Text style={styles.sectionHeaderStyle}>Môi trường</Text>
+        <TouchableRipple
+          style={commonStyles.item}
+          onPress={() => {
+            console.log('test');
+          }}
+          rippleColor="rgba(0, 0, 0, .32)">
+          <View style={commonStyles.itemRow}>
+            <MaterialCommunityIcons name="coolant-temperature" size={40} />
+            <Text style={styles.description}>Nhiệt độ</Text>
+            <Text style={styles.data}>{temp}</Text>
+          </View>
+        </TouchableRipple>
+        <TouchableRipple
+          style={commonStyles.item}
+          onPress={() => {
+            console.log('test');
+          }}
+          rippleColor="rgba(0, 0, 0, .32)">
+          <View style={commonStyles.itemRow}>
+            <MaterialCommunityIcons name="air-humidifier" size={40} />
+            <Text style={styles.description}>Độ ẩm</Text>
+            <Text style={styles.data}>{humi}</Text>
+          </View>
+        </TouchableRipple>
+        <TouchableRipple
+          style={commonStyles.item}
+          onPress={() => {
+            console.log('test');
+          }}
+          rippleColor="rgba(0, 0, 0, .32)">
+          <View style={commonStyles.itemRow}>
+            <MaterialCommunityIcons name="white-balance-sunny" size={40} />
+            <Text style={styles.description}>Ánh sáng</Text>
+            <Text style={styles.data}>{light}</Text>
+          </View>
+        </TouchableRipple>
+        <Text style={styles.sectionHeaderStyle}>Thiết bị</Text>
+        <TouchableRipple
+          style={commonStyles.item}
+          onPress={() => {
+            console.log('test');
+          }}
+          rippleColor="rgba(0, 0, 0, .32)">
+          <View style={commonStyles.itemRow}>
+            <MaterialCommunityIcons name="white-balance-sunny" size={40} />
+            <Text style={styles.description}>Đèn sưởi</Text>
+            <Text style={styles.data}>{device1 == 0 ? 'OFF' : 'ON'}</Text>
+          </View>
+        </TouchableRipple>
+        <TouchableRipple
+          style={commonStyles.item}
+          onPress={() => {
+            console.log('test');
+          }}
+          rippleColor="rgba(0, 0, 0, .32)">
+          <View style={commonStyles.itemRow}>
+            <MaterialCommunityIcons name="air-humidifier" size={40} />
+            <Text style={styles.description}>Độ ẩm</Text>
+            <Text style={styles.data}>{device2 == 0 ? 'OFF' : 'ON'}</Text>
+          </View>
+        </TouchableRipple>
+        <TouchableRipple
+          style={commonStyles.item}
+          onPress={() => {
+            console.log('test');
+          }}
+          rippleColor="rgba(0, 0, 0, .32)">
+          <View style={commonStyles.itemRow}>
+            <MaterialCommunityIcons name="robot" size={40} />
+            <Text style={styles.description}>Chế độ tự động</Text>
+            <Text style={styles.data}>{mode == 0 ? 'OFF' : 'ON'}</Text>
+          </View>
+        </TouchableRipple>
       </ScrollView>
       <View style={commonStyles.bottomButton}>
         <Button

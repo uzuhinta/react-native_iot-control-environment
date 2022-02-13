@@ -154,7 +154,7 @@ export default function ListDeviceScreen({navigation}) {
               renderSectionFooter={renderNoContent}
               sections={[
                 {title: 'Hoạt động', data: farmClass.activate},
-                {title: 'Chưa hoạt động', data: farmClass.inactivate},
+                // {title: 'Chưa hoạt động', data: farmClass.inactivate},
               ]}
               renderSectionHeader={({section}) => (
                 <Text style={commonStyles.sectionHeaderStyle}>
