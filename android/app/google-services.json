@@ -1,0 +1,83 @@
+{
+  "project_info": {
+    "project_number": "634014721111",
+    "firebase_url": "https://esp8266-1708.firebaseio.com",
+    "project_id": "esp8266-1708",
+    "storage_bucket": "esp8266-1708.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:634014721111:android:1eb07f8d26b146b6dc2f12",
+        "android_client_info": {
+          "package_name": "com.awesomeproject"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "634014721111-of3qm9td8gfleg748bo10r06j42qrqtb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJgIKlWievHUKTxnXsWWbV9WLsLKR9Mi8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "634014721111-of3qm9td8gfleg748bo10r06j42qrqtb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "634014721111-0cnm8qn4ibiadjrq53ulpi8a79pn4eai.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.reactjs.native.example.iot"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:634014721111:android:dd92d632fe01197edc2f12",
+        "android_client_info": {
+          "package_name": "com.smartfarm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "634014721111-of3qm9td8gfleg748bo10r06j42qrqtb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJgIKlWievHUKTxnXsWWbV9WLsLKR9Mi8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "634014721111-of3qm9td8gfleg748bo10r06j42qrqtb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "634014721111-0cnm8qn4ibiadjrq53ulpi8a79pn4eai.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "org.reactjs.native.example.iot"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
